@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var MessagingResponse = require('twilio').twiml.MessagingResponse;
+var Reservation = require("../models/reservations");
 
 const reservationData = [];
 
@@ -17,7 +18,10 @@ router.post('/', function(req, res, next) {
 
   // The content of the text message sent to twilio.
   var reservationMessage = req.body.Body.split('/');
-  var reservationDate = new Date(reservationMessage[2]);
+  var firstName = reservationMessage[0];
+  var lastName = reservationMessage[1];
+  var datetime = reservationMessage[2];
+  var reservationDate = new Date(datetime);
   var reservationHours = reservationDate.getHours();
   var reservationMin =  (reservationDate.getMinutes() < 10) ? '0' + reservationDate.getMinutes() : reservationDate.getMinutes()
 
@@ -32,18 +36,18 @@ router.post('/', function(req, res, next) {
     name: 'Hariet'
   };
 
-
   if (restaurant.opening < reservationHours && reservationHours < restaurant.closing - 1) {
     message = 'Reservation successful';
-    const reservationId = reservationData.length + 1;
-    reservationData.push({
-      id: reservationId,
-      name: `${reservationMessage[0]}
-            ${reservationMessage[1]} at
-            ${reservationHours}:${reservationMin}`
+
+    // Add details of a successful reservation to the database.
+    let newReservation = {firstname: firstName, lastname: lastName, datetime: datetime};
+    Reservation.create(newReservation, (err, reservation) => {
+      if (err) {
+        console.log(err);
+      } else {
+        console.log("reservation successfully saved to database.");
+      }
     });
-
-
   } else {
     message = 'Reservation unsucessful';
   }

@@ -3,14 +3,18 @@ var router = express.Router();
 var MessagingResponse = require('twilio').twiml.MessagingResponse;
 var Reservation = require("../models/reservations");
 
-const reservationData = [];
-
 /* GET request */
 router.get('/', function(req, res, next) {
-  res.json(
-    reservationData
-  )
-})
+  Reservation.find({}, (err, reservations) => {
+    if (err) {
+      console.log(err);
+    } else {
+      reservations = formatReservations(reservations);
+      res.json(reservations);
+      // res.json([{id: 1, name: "sola"}, {id: 2, name: "foobar"}]);
+    }
+  });
+});
 
 /* POST create reservations */
 router.post('/', function(req, res, next) {
@@ -58,5 +62,23 @@ router.post('/', function(req, res, next) {
   res.writeHead(200, {'Content-Type': 'text/xml'});
   res.end(twiml.toString());
 });
+
+function formatReservations(data) {
+  formattedData = data.map(datum => {
+    var reservationDate = new Date(datum.datetime);
+    var reservationHours = reservationDate.getHours();
+    var reservationMin =  (reservationDate.getMinutes() < 10) ? '0' + reservationDate.getMinutes() : reservationDate.getMinutes()
+
+    reservationObject = {
+      id: datum._id,
+      name: `${datum.firstname} ${datum.lastname} at
+             ${reservationHours}:${reservationMin}`
+    }
+
+    return reservationObject;
+  });
+
+  return formattedData;
+}
 
 module.exports = router;
